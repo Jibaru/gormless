@@ -15,6 +15,7 @@ func TestGenerateDAOs(t *testing.T) {
 		drivers := []string{
 			"mysql",
 			"postgres",
+			"sqlserver",
 		}
 
 		for _, driver := range drivers {

@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().StringVarP(&input, "input", "i", "", "Path to file or folder with models (required)")
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Path to output folder (required)")
-	rootCmd.Flags().StringVarP(&driver, "driver", "d", "", "Database driver: postgres, mysql (required)")
+	rootCmd.Flags().StringVarP(&driver, "driver", "d", "", "Database driver: postgres, mysql, sqlserver (required)")
 
 	rootCmd.MarkFlagRequired("input")
 	rootCmd.MarkFlagRequired("output")
@@ -65,8 +65,8 @@ func validateFlags() error {
 	if driver == "" {
 		return fmt.Errorf("driver not provided")
 	}
-	if driver != "postgres" && driver != "mysql" {
-		return fmt.Errorf("invalid driver: %s. Allowed drivers: postgres, mysql", driver)
+	if driver != "postgres" && driver != "mysql" && driver != "sqlserver" {
+		return fmt.Errorf("invalid driver: %s. Allowed drivers: postgres, mysql, sqlserver", driver)
 	}
 	return nil
 }

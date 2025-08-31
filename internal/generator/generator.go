@@ -32,6 +32,8 @@ func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 			content, err = GeneratePostgresDAO(model)
 		case "mysql":
 			content, err = GenerateMySQLDAO(model)
+		case "sqlserver":
+			content, err = GenerateSQLServerDAO(model)
 		default:
 			return fmt.Errorf("unsupported driver: %s", driver)
 		}

@@ -9,7 +9,16 @@
       "Bash(./gormless.exe --driver mysql --input examples/product.go --output test_output)",
       "Bash(./gormless.exe --driver postgres --input examples/ --output test_output)",
       "Bash(./gormless.exe --driver invalid --input examples/product.go --output test_output)",
-      "Bash(./gormless.exe --driver postgres --input nonexistent.go --output test_output)"
+      "Bash(./gormless.exe --driver postgres --input nonexistent.go --output test_output)",
+      "Bash(./gormless.exe --driver sqlserver --input examples/product.go --output test_output)",
+      "Bash(go run:*)",
+      "Bash(cat:*)",
+      "Bash(go test:*)",
+      "Bash(/dev/null)",
+      "Bash(./gormless.exe --driver sqlserver --input examples/user.go --output temp_test)",
+      "Read(C:\\tmp/**)",
+      "Bash(./gormless.exe --driver sqlserver --input examples/ --output test_output_final)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
