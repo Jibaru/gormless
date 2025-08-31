@@ -25,23 +25,20 @@
 
 ### Installation
 
-```bash
-# Install via go install
-go install github.com/Jibaru/gormless@latest
+Install via go install:
 
-# Or download from releases
-curl -L https://github.com/Jibaru/gormless/releases/latest/download/gormless-linux-amd64 -o gormless
-chmod +x gormless
+```bash
+go install github.com/Jibaru/gormless@latest
 ```
 
 ### Basic Usage
 
 ```bash
 # Generate PostgreSQL DAOs
-gormless -input ./models -output ./dao -driver postgres
+gormless --input ./models --output ./dao --driver postgres
 
 # Generate MySQL DAOs  
-gormless -input ./models/user.go -output ./dao -driver mysql
+gormless --input ./models/user.go --output ./dao --driver mysql
 ```
 
 ## Documentation
