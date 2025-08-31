@@ -34,6 +34,8 @@ func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 			content, err = GenerateMySQLDAO(model)
 		case "sqlserver":
 			content, err = GenerateSQLServerDAO(model)
+		case "oracle":
+			content, err = GenerateOracleDAO(model)
 		default:
 			return fmt.Errorf("unsupported driver: %s", driver)
 		}

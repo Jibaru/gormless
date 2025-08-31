@@ -7,13 +7,13 @@
 [![Release](https://img.shields.io/github/v/release/Jibaru/gormless?include_prereleases)](https://github.com/Jibaru/gormless/releases)
 [![Docker Image](https://img.shields.io/badge/Docker-Available-2496ED?style=flat&logo=docker)](https://hub.docker.com/r/jibaru/gormless)
 
-> A powerful, lightweight code generator that creates type-safe Data Access Objects (DAOs) for Go applications with support for PostgreSQL, MySQL, and SQL Server.
+> A powerful, lightweight code generator that creates type-safe Data Access Objects (DAOs) for Go applications with support for PostgreSQL, MySQL, SQL Server, and Oracle.
 
 ## Features
 
 - **Lightning Fast**: Generates comprehensive DAOs in seconds
 - **Type-Safe**: Leverages Go's type system for compile-time safety
-- **Multi-Database**: Supports PostgreSQL, MySQL, and SQL Server with native query optimization
+- **Multi-Database**: Supports PostgreSQL, MySQL, SQL Server, and Oracle with native query optimization
 - **Zero Dependencies**: Generated code uses only standard library packages
 - **Smart Tagging**: Automatic field mapping using struct tags
 - **Transaction Support**: Built-in transaction management
@@ -42,6 +42,9 @@ gormless --input ./models/user.go --output ./dao --driver mysql
 
 # Generate SQL Server DAOs
 gormless --input ./models --output ./dao --driver sqlserver
+
+# Generate Oracle DAOs
+gormless --input ./models --output ./dao --driver oracle
 ```
 
 ## Documentation
@@ -187,6 +190,43 @@ func main() {
 }
 ```
 
+#### Oracle
+```go
+package main
+
+import (
+    "context"
+    "database/sql"
+    "log"
+    
+    "your-project/dao/oracle"
+    "your-project/models"
+    _ "github.com/godror/godror"
+)
+
+func main() {
+    db, err := sql.Open("godror", "user/password@localhost:1521/XE")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+
+    userDAO := oracle.NewUserDAO(db)
+    
+    // Same API as other drivers
+    user := &models.User{
+        ID:    "user-123",
+        Name:  "John Doe", 
+        Email: "john@example.com",
+    }
+    
+    err = userDAO.Create(context.Background(), user)
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
 ## Configuration
 
 ### Command Line Options
@@ -195,7 +235,7 @@ func main() {
 |--------|-------|-------------|----------|
 | `--input` | `-i` | Path to model file or directory | ✅ |
 | `--output` | `-o` | Output directory for generated DAOs | ✅ |
-| `--driver` | `-d` | Database driver (`postgres`, `mysql`, `sqlserver`) | ✅ |
+| `--driver` | `-d` | Database driver (`postgres`, `mysql`, `sqlserver`, `oracle`) | ✅ |
 
 ### Struct Tags
 
@@ -211,6 +251,7 @@ func main() {
 | PostgreSQL | `postgres` | `$1, $2, $3` |
 | MySQL | `mysql` | `?, ?, ?` |
 | SQL Server | `sqlserver` | `@p1, @p2, @p3` |
+| Oracle | `oracle` | `:1, :2, :3` |
 
 ## License
 
