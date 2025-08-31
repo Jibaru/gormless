@@ -36,6 +36,8 @@ func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 			content, err = GenerateSQLServerDAO(model)
 		case "oracle":
 			content, err = GenerateOracleDAO(model)
+		case "sqlite":
+			content, err = GenerateSQLiteDAO(model)
 		default:
 			return fmt.Errorf("unsupported driver: %s", driver)
 		}

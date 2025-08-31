@@ -20,7 +20,9 @@
       "Bash(./gormless.exe --driver sqlserver --input examples/ --output test_output_final)",
       "Bash(grep:*)",
       "Bash(./gormless.exe --driver oracle --input examples/product.go --output test_oracle_output)",
-      "Bash(./gormless.exe --driver oracle --input examples/ --output final_test_oracle)"
+      "Bash(./gormless.exe --driver oracle --input examples/ --output final_test_oracle)",
+      "Bash(./gormless.exe --driver sqlite --input examples/product.go --output test_sqlite_output)",
+      "Bash(./gormless.exe --driver sqlite --input examples/ --output final_sqlite_test)"
     ],
     "deny": [],
     "ask": []
