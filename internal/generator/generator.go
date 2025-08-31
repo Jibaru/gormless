@@ -11,7 +11,7 @@ import (
 
 func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 	driverPath := filepath.Join(outputPath, driver)
-	
+
 	if err := os.MkdirAll(driverPath, 0755); err != nil {
 		return fmt.Errorf("failed to create driver directory: %v", err)
 	}
@@ -19,7 +19,7 @@ func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 	for _, model := range models {
 		fileName := fmt.Sprintf("%s_dao.go", toSnakeCase(model.Name))
 		filePath := filepath.Join(driverPath, fileName)
-		
+
 		if _, err := os.Stat(filePath); err == nil {
 			return fmt.Errorf("file with name %s already exists", filePath)
 		}
@@ -29,9 +29,9 @@ func GenerateDAOs(models []parser.Model, outputPath, driver string) error {
 
 		switch driver {
 		case "postgres":
-			content, err = generatePostgresDAO(model)
+			content, err = GeneratePostgresDAO(model)
 		case "mysql":
-			content, err = generateMySQLDAO(model)
+			content, err = GenerateMySQLDAO(model)
 		default:
 			return fmt.Errorf("unsupported driver: %s", driver)
 		}

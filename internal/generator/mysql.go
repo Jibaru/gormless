@@ -7,28 +7,28 @@ import (
 	"github.com/Jibaru/gormless/internal/parser"
 )
 
-func generateMySQLDAO(model parser.Model) (string, error) {
+func GenerateMySQLDAO(model parser.Model) (string, error) {
 	imports := []string{
 		"context",
 		"database/sql",
-		"fmt", 
+		"fmt",
 		"strings",
 		model.ImportPath,
 	}
 
 	var content strings.Builder
-	
+
 	content.WriteString(fmt.Sprintf("package %s\n\n", "mysql"))
 	content.WriteString("import (\n")
 	for _, imp := range imports {
 		content.WriteString(fmt.Sprintf("\t\"%s\"\n", imp))
 	}
 	content.WriteString(")\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("type %s = %s.%s\n\n", model.Name, model.Package, model.Name))
 
 	daoName := fmt.Sprintf("%sDAO", model.Name)
-	
+
 	content.WriteString(fmt.Sprintf("type %s struct {\n", daoName))
 	content.WriteString("\tdb *sql.DB\n")
 	content.WriteString("}\n\n")
@@ -56,7 +56,7 @@ func generateMySQLDAO(model parser.Model) (string, error) {
 
 func generateMySQLHelperMethods(daoName string) string {
 	var content strings.Builder
-	
+
 	content.WriteString(fmt.Sprintf("func (dao *%s) getTx(ctx context.Context) *sql.Tx {\n", daoName))
 	content.WriteString("\tif tx, ok := ctx.Value(\"currentTx\").(*sql.Tx); ok {\n")
 	content.WriteString("\t\treturn tx\n")
@@ -105,7 +105,7 @@ func generateMySQLCreateMethod(model parser.Model, daoName string) string {
 	content.WriteString(fmt.Sprintf("\t\tINSERT INTO %s (%s)\n", model.TableName, strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tVALUES (%s)\n", strings.Join(placeholders, ", ")))
 	content.WriteString("\t`\n\n")
-	
+
 	content.WriteString("\t_, err := dao.execContext(\n")
 	content.WriteString("\t\tctx,\n")
 	content.WriteString("\t\tquery,\n")
@@ -143,7 +143,7 @@ func generateMySQLUpdateMethod(model parser.Model, daoName string) string {
 	content.WriteString(fmt.Sprintf("\t\tSET %s\n", strings.Join(setClauses, ",\n\t\t\t")))
 	content.WriteString(fmt.Sprintf("\t\t%s\n", whereClause))
 	content.WriteString("\t`\n\n")
-	
+
 	content.WriteString("\t_, err := dao.execContext(ctx, query,\n")
 	for _, arg := range args {
 		content.WriteString(fmt.Sprintf("\t\t%s,\n", arg))
@@ -164,19 +164,19 @@ func generateMySQLPartialUpdateMethod(model parser.Model, daoName string) string
 	content.WriteString("\tif len(fields) == 0 {\n")
 	content.WriteString("\t\treturn nil\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tsetClauses := make([]string, 0, len(fields))\n")
 	content.WriteString("\targs := make([]interface{}, 0, len(fields)+1)\n\n")
-	
+
 	content.WriteString("\tfor field, value := range fields {\n")
 	content.WriteString("\t\tsetClauses = append(setClauses, field + \" = ?\")\n")
 	content.WriteString("\t\targs = append(args, value)\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\targs = append(args, pk)\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("\tquery := fmt.Sprintf(\"UPDATE %s SET %%s WHERE %s = ?\", strings.Join(setClauses, \", \"))\n\n", model.TableName, primaryColumn))
-	
+
 	content.WriteString("\t_, err := dao.execContext(ctx, query, args...)\n")
 	content.WriteString("\treturn err\n")
 	content.WriteString("}\n\n")
@@ -217,18 +217,18 @@ func generateMySQLFindByIDMethod(model parser.Model, daoName string) string {
 	content.WriteString(fmt.Sprintf("\t\tWHERE %s = ?\n", primaryColumn))
 	content.WriteString("\t`\n")
 	content.WriteString("\trow := dao.queryRowContext(ctx, query, pk)\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("\tvar m %s\n", model.Name))
 	content.WriteString("\terr := row.Scan(\n")
 	for _, arg := range scanArgs {
 		content.WriteString(fmt.Sprintf("\t\t%s,\n", arg))
 	}
 	content.WriteString("\t)\n\n")
-	
+
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\treturn nil, err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn &m, nil\n")
 	content.WriteString("}\n\n")
 
@@ -250,25 +250,25 @@ func generateMySQLCreateManyMethod(model parser.Model, daoName string) string {
 	content.WriteString("\tif len(models) == 0 {\n")
 	content.WriteString("\t\treturn nil\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tplaceholders := make([]string, len(models))\n")
 	content.WriteString(fmt.Sprintf("\targs := make([]interface{}, 0, len(models)*%d)\n\n", fieldCount))
-	
+
 	content.WriteString("\tfor i, model := range models {\n")
 	content.WriteString(fmt.Sprintf("\t\tplaceholders[i] = \"(%s)\"\n\n", placeholders))
-	
+
 	content.WriteString("\t\targs = append(args,\n")
 	for _, field := range model.Fields {
 		content.WriteString(fmt.Sprintf("\t\t\tmodel.%s,\n", field.Name))
 	}
 	content.WriteString("\t\t)\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tquery := fmt.Sprintf(`\n")
 	content.WriteString(fmt.Sprintf("\t\tINSERT INTO %s (%s)\n", model.TableName, strings.Join(columns, ", ")))
 	content.WriteString("\t\tVALUES %s\n")
 	content.WriteString("\t`, strings.Join(placeholders, \", \"))\n\n")
-	
+
 	content.WriteString("\t_, err := dao.execContext(ctx, query, args...)\n")
 	content.WriteString("\treturn err\n")
 	content.WriteString("}\n\n")
@@ -298,13 +298,13 @@ func generateMySQLUpdateManyMethod(model parser.Model, daoName string) string {
 	content.WriteString("\tif len(models) == 0 {\n")
 	content.WriteString("\t\treturn nil\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tUPDATE %s\n", model.TableName))
 	content.WriteString(fmt.Sprintf("\t\tSET %s\n", strings.Join(setClauses, ",\n\t\t\t")))
 	content.WriteString(fmt.Sprintf("\t\t%s\n", whereClause))
 	content.WriteString("\t`\n\n")
-	
+
 	content.WriteString("\tfor _, model := range models {\n")
 	content.WriteString("\t\t_, err := dao.execContext(ctx, query,\n")
 	for _, arg := range args {
@@ -315,7 +315,7 @@ func generateMySQLUpdateManyMethod(model parser.Model, daoName string) string {
 	content.WriteString("\t\t\treturn err\n")
 	content.WriteString("\t\t}\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn nil\n")
 	content.WriteString("}\n\n")
 
@@ -331,13 +331,13 @@ func generateMySQLDeleteManyByIDsMethod(model parser.Model, daoName string) stri
 	content.WriteString("\tif len(pks) == 0 {\n")
 	content.WriteString("\t\treturn nil\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tplaceholders := strings.Repeat(\"?,\", len(pks)-1) + \"?\"\n")
 	content.WriteString("\targs := make([]interface{}, len(pks))\n")
 	content.WriteString("\tfor i, pk := range pks {\n")
 	content.WriteString("\t\targs[i] = pk\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("\tquery := fmt.Sprintf(\"DELETE FROM %s WHERE %s IN (%%s)\", placeholders)\n", model.TableName, primaryColumn))
 	content.WriteString("\t_, err := dao.execContext(ctx, query, args...)\n")
 	content.WriteString("\treturn err\n")
@@ -361,17 +361,17 @@ func generateMySQLFindAllMethod(model parser.Model, daoName string) string {
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
 	content.WriteString("\t`\n\n")
-	
+
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\trows, err := dao.queryContext(ctx, query, args...)\n")
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\treturn nil, err\n")
 	content.WriteString("\t}\n")
 	content.WriteString("\tdefer rows.Close()\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("\tvar models []*%s\n", model.Name))
 	content.WriteString("\tfor rows.Next() {\n")
 	content.WriteString(fmt.Sprintf("\t\tvar m %s\n", model.Name))
@@ -385,11 +385,11 @@ func generateMySQLFindAllMethod(model parser.Model, daoName string) string {
 	content.WriteString("\t\t}\n")
 	content.WriteString("\t\tmodels = append(models, &m)\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tif err := rows.Err(); err != nil {\n")
 	content.WriteString("\t\treturn nil, err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn models, nil\n")
 	content.WriteString("}\n\n")
 
@@ -411,19 +411,19 @@ func generateMySQLFindPaginatedMethod(model parser.Model, daoName string) string
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
 	content.WriteString("\t`\n\n")
-	
+
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tquery += fmt.Sprintf(\" LIMIT %d OFFSET %d\", limit, offset)\n\n")
-	
+
 	content.WriteString("\trows, err := dao.queryContext(ctx, query, args...)\n")
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\treturn nil, err\n")
 	content.WriteString("\t}\n")
 	content.WriteString("\tdefer rows.Close()\n\n")
-	
+
 	content.WriteString(fmt.Sprintf("\tvar models []*%s\n", model.Name))
 	content.WriteString("\tfor rows.Next() {\n")
 	content.WriteString(fmt.Sprintf("\t\tvar m %s\n", model.Name))
@@ -437,11 +437,11 @@ func generateMySQLFindPaginatedMethod(model parser.Model, daoName string) string
 	content.WriteString("\t\t}\n")
 	content.WriteString("\t\tmodels = append(models, &m)\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tif err := rows.Err(); err != nil {\n")
 	content.WriteString("\t\treturn nil, err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn models, nil\n")
 	content.WriteString("}\n\n")
 
@@ -453,19 +453,19 @@ func generateMySQLCountMethod(model parser.Model, daoName string) string {
 
 	content.WriteString(fmt.Sprintf("func (dao *%s) Count(ctx context.Context, where string, args ...interface{}) (int64, error) {\n", daoName))
 	content.WriteString(fmt.Sprintf("\tquery := \"SELECT COUNT(*) FROM %s\"\n\n", model.TableName))
-	
+
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\trow := dao.queryRowContext(ctx, query, args...)\n\n")
-	
+
 	content.WriteString("\tvar count int64\n")
 	content.WriteString("\terr := row.Scan(&count)\n")
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\treturn 0, err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn count, nil\n")
 	content.WriteString("}\n\n")
 
@@ -480,9 +480,9 @@ func generateMySQLWithTransactionMethod(daoName string) string {
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\treturn err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tctxWithTx := context.WithValue(ctx, \"currentTx\", tx)\n\n")
-	
+
 	content.WriteString("\terr = fn(ctxWithTx)\n")
 	content.WriteString("\tif err != nil {\n")
 	content.WriteString("\t\tif rbErr := tx.Rollback(); rbErr != nil {\n")
@@ -490,11 +490,11 @@ func generateMySQLWithTransactionMethod(daoName string) string {
 	content.WriteString("\t\t}\n")
 	content.WriteString("\t\treturn err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\tif err := tx.Commit(); err != nil {\n")
 	content.WriteString("\t\treturn err\n")
 	content.WriteString("\t}\n\n")
-	
+
 	content.WriteString("\treturn nil\n")
 	content.WriteString("}\n")
 
