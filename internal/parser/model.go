@@ -21,15 +21,15 @@ type Model struct {
 }
 
 type Field struct {
-	Name     string
-	Type     string
-	Column   string
+	Name      string
+	Type      string
+	Column    string
 	IsPrimary bool
 }
 
 func ParseModels(inputPath string) ([]Model, error) {
 	var models []Model
-	
+
 	info, err := os.Stat(inputPath)
 	if err != nil {
 		return nil, err
@@ -202,9 +202,9 @@ func parseStruct(name string, st *ast.StructType, file *ast.File) (Model, error)
 		}
 
 		model.Fields = append(model.Fields, Field{
-			Name:     fieldName,
-			Type:     fieldType,
-			Column:   column,
+			Name:      fieldName,
+			Type:      fieldType,
+			Column:    column,
 			IsPrimary: isPrimary,
 		})
 	}
