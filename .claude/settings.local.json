@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go get:*)",
+      "Bash(go build:*)",
+      "Bash(.gormless.exe -input examplesproduct.go -output test_output -driver postgres)",
+      "Bash(./gormless.exe -input examples/product.go -output test_output -driver postgres)",
+      "Bash(./gormless.exe --driver postgres --input examples/product.go --output test_output)",
+      "Bash(./gormless.exe --driver mysql --input examples/product.go --output test_output)",
+      "Bash(./gormless.exe --driver postgres --input examples/ --output test_output)",
+      "Bash(./gormless.exe --driver invalid --input examples/product.go --output test_output)",
+      "Bash(./gormless.exe --driver postgres --input nonexistent.go --output test_output)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
