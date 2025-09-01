@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
-
 	"github.com/Jibaru/gormless/examples"
+	"strings"
 )
 
 type Product = examples.Product
@@ -47,7 +46,7 @@ func (dao *ProductDAO) queryContext(ctx context.Context, query string, args ...i
 	return dao.db.QueryContext(ctx, query, args...)
 }
 
-func (dao *ProductDAO) Create(ctx context.Context, p *Product) error {
+func (dao *ProductDAO) Create(ctx context.Context, m *Product) error {
 	query := `
 		INSERT INTO products (id, name, description, category, price, stock, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -56,19 +55,19 @@ func (dao *ProductDAO) Create(ctx context.Context, p *Product) error {
 	_, err := dao.execContext(
 		ctx,
 		query,
-		p.ID,
-		p.Name,
-		p.Description,
-		p.Category,
-		p.Price,
-		p.Stock,
-		p.CreatedAt,
+		m.ID,
+		m.Name,
+		m.Description,
+		m.Category,
+		m.Price,
+		m.Stock,
+		m.CreatedAt,
 	)
 
 	return err
 }
 
-func (dao *ProductDAO) Update(ctx context.Context, p *Product) error {
+func (dao *ProductDAO) Update(ctx context.Context, m *Product) error {
 	query := `
 		UPDATE products
 		SET name = $1,
@@ -81,18 +80,18 @@ func (dao *ProductDAO) Update(ctx context.Context, p *Product) error {
 	`
 
 	_, err := dao.execContext(ctx, query,
-		p.Name,
-		p.Description,
-		p.Category,
-		p.Price,
-		p.Stock,
-		p.CreatedAt,
-		p.ID,
+		m.Name,
+		m.Description,
+		m.Category,
+		m.Price,
+		m.Stock,
+		m.CreatedAt,
+		m.ID,
 	)
 	return err
 }
 
-func (dao *ProductDAO) PartialUpdate(ctx context.Context, id string, fields map[string]interface{}) error {
+func (dao *ProductDAO) PartialUpdate(ctx context.Context, pk string, fields map[string]interface{}) error {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -107,7 +106,7 @@ func (dao *ProductDAO) PartialUpdate(ctx context.Context, id string, fields map[
 		i++
 	}
 
-	args = append(args, id)
+	args = append(args, pk)
 
 	query := fmt.Sprintf(`UPDATE products SET %s WHERE id = $%d`, strings.Join(setClauses, ", "), i)
 
@@ -129,45 +128,44 @@ func (dao *ProductDAO) FindByPk(ctx context.Context, pk string) (*Product, error
 	`
 	row := dao.queryRowContext(ctx, query, pk)
 
-	var p Product
+	var m Product
 	err := row.Scan(
-		&p.ID,
-		&p.Name,
-		&p.Description,
-		&p.Category,
-		&p.Price,
-		&p.Stock,
-		&p.CreatedAt,
+		&m.ID,
+		&m.Name,
+		&m.Description,
+		&m.Category,
+		&m.Price,
+		&m.Stock,
+		&m.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &p, nil
+	return &m, nil
 }
 
-func (dao *ProductDAO) CreateMany(ctx context.Context, products []*Product) error {
-	if len(products) == 0 {
+func (dao *ProductDAO) CreateMany(ctx context.Context, models []*Product) error {
+	if len(models) == 0 {
 		return nil
 	}
 
-	// Build placeholders dynamically
-	placeholders := make([]string, len(products))
-	args := make([]interface{}, 0, len(products)*7)
+	placeholders := make([]string, len(models))
+	args := make([]interface{}, 0, len(models)*7)
 
-	for i, product := range products {
+	for i, model := range models {
 		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 			i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
 
 		args = append(args,
-			product.ID,
-			product.Name,
-			product.Description,
-			product.Category,
-			product.Price,
-			product.Stock,
-			product.CreatedAt,
+			model.ID,
+			model.Name,
+			model.Description,
+			model.Category,
+			model.Price,
+			model.Stock,
+			model.CreatedAt,
 		)
 	}
 
@@ -180,8 +178,8 @@ func (dao *ProductDAO) CreateMany(ctx context.Context, products []*Product) erro
 	return err
 }
 
-func (dao *ProductDAO) UpdateMany(ctx context.Context, products []*Product) error {
-	if len(products) == 0 {
+func (dao *ProductDAO) UpdateMany(ctx context.Context, models []*Product) error {
+	if len(models) == 0 {
 		return nil
 	}
 
@@ -196,15 +194,15 @@ func (dao *ProductDAO) UpdateMany(ctx context.Context, products []*Product) erro
 		WHERE id = $7
 	`
 
-	for _, product := range products {
+	for _, model := range models {
 		_, err := dao.execContext(ctx, query,
-			product.Name,
-			product.Description,
-			product.Category,
-			product.Price,
-			product.Stock,
-			product.CreatedAt,
-			product.ID,
+			model.Name,
+			model.Description,
+			model.Category,
+			model.Price,
+			model.Stock,
+			model.CreatedAt,
+			model.ID,
 		)
 		if err != nil {
 			return err
@@ -219,7 +217,6 @@ func (dao *ProductDAO) DeleteManyByPks(ctx context.Context, pks []string) error 
 		return nil
 	}
 
-	// Build placeholders dynamically
 	placeholders := make([]string, len(pks))
 	args := make([]interface{}, len(pks))
 	for i, pk := range pks {
@@ -232,7 +229,7 @@ func (dao *ProductDAO) DeleteManyByPks(ctx context.Context, pks []string) error 
 	return err
 }
 
-func (dao *ProductDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*Product, error) {
+func (dao *ProductDAO) FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*Product, error) {
 	query := `
 		SELECT id, name, description, category, price, stock, created_at
 		FROM products
@@ -242,27 +239,31 @@ func (dao *ProductDAO) FindOne(ctx context.Context, where string, args ...interf
 		query += " WHERE " + where
 	}
 
+	if sort != "" {
+		query += " ORDER BY " + sort
+	}
+
 	row := dao.queryRowContext(ctx, query, args...)
 
-	var p Product
+	var m Product
 	err := row.Scan(
-		&p.ID,
-		&p.Name,
-		&p.Description,
-		&p.Category,
-		&p.Price,
-		&p.Stock,
-		&p.CreatedAt,
+		&m.ID,
+		&m.Name,
+		&m.Description,
+		&m.Category,
+		&m.Price,
+		&m.Stock,
+		&m.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &p, nil
+	return &m, nil
 }
 
-func (dao *ProductDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*Product, error) {
+func (dao *ProductDAO) FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*Product, error) {
 	query := `
 		SELECT id, name, description, category, price, stock, created_at
 		FROM products
@@ -270,6 +271,10 @@ func (dao *ProductDAO) FindAll(ctx context.Context, where string, args ...interf
 
 	if where != "" {
 		query += " WHERE " + where
+	}
+
+	if sort != "" {
+		query += " ORDER BY " + sort
 	}
 
 	rows, err := dao.queryContext(ctx, query, args...)
@@ -278,32 +283,32 @@ func (dao *ProductDAO) FindAll(ctx context.Context, where string, args ...interf
 	}
 	defer rows.Close()
 
-	var products []*Product
+	var models []*Product
 	for rows.Next() {
-		var p Product
+		var m Product
 		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.Description,
-			&p.Category,
-			&p.Price,
-			&p.Stock,
-			&p.CreatedAt,
+			&m.ID,
+			&m.Name,
+			&m.Description,
+			&m.Category,
+			&m.Price,
+			&m.Stock,
+			&m.CreatedAt,
 		)
 		if err != nil {
 			return nil, err
 		}
-		products = append(products, &p)
+		models = append(models, &m)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return products, nil
+	return models, nil
 }
 
-func (dao *ProductDAO) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*Product, error) {
+func (dao *ProductDAO) FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*Product, error) {
 	query := `
 		SELECT id, name, description, category, price, stock, created_at
 		FROM products
@@ -311,6 +316,10 @@ func (dao *ProductDAO) FindPaginated(ctx context.Context, limit, offset int, whe
 
 	if where != "" {
 		query += " WHERE " + where
+	}
+
+	if sort != "" {
+		query += " ORDER BY " + sort
 	}
 
 	query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
@@ -321,29 +330,29 @@ func (dao *ProductDAO) FindPaginated(ctx context.Context, limit, offset int, whe
 	}
 	defer rows.Close()
 
-	var products []*Product
+	var models []*Product
 	for rows.Next() {
-		var p Product
+		var m Product
 		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.Description,
-			&p.Category,
-			&p.Price,
-			&p.Stock,
-			&p.CreatedAt,
+			&m.ID,
+			&m.Name,
+			&m.Description,
+			&m.Category,
+			&m.Price,
+			&m.Stock,
+			&m.CreatedAt,
 		)
 		if err != nil {
 			return nil, err
 		}
-		products = append(products, &p)
+		models = append(models, &m)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return products, nil
+	return models, nil
 }
 
 func (dao *ProductDAO) Count(ctx context.Context, where string, args ...interface{}) (int64, error) {

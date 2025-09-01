@@ -149,14 +149,14 @@ func generateDAOInterface(model parser.Model) (string, error) {
 	content.WriteString(fmt.Sprintf("\tDeleteManyByPks(ctx context.Context, pks []%s) error\n\n", primaryType))
 
 	// Query operations
-	content.WriteString(fmt.Sprintf("\t// FindOne finds a single %s with optional where clause\n", model.Name))
-	content.WriteString(fmt.Sprintf("\tFindOne(ctx context.Context, where string, args ...interface{}) (*%s, error)\n\n", model.Name))
+	content.WriteString(fmt.Sprintf("\t// FindOne finds a single %s with optional where clause and sort expression\n", model.Name))
+	content.WriteString(fmt.Sprintf("\tFindOne(ctx context.Context, where string, sort string, args ...interface{}) (*%s, error)\n\n", model.Name))
 
-	content.WriteString(fmt.Sprintf("\t// FindAll finds all %s records with optional where clause\n", model.Name))
-	content.WriteString(fmt.Sprintf("\tFindAll(ctx context.Context, where string, args ...interface{}) ([]*%s, error)\n\n", model.Name))
+	content.WriteString(fmt.Sprintf("\t// FindAll finds all %s records with optional where clause and sort expression\n", model.Name))
+	content.WriteString(fmt.Sprintf("\tFindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*%s, error)\n\n", model.Name))
 
-	content.WriteString(fmt.Sprintf("\t// FindPaginated finds %s records with pagination and optional where clause\n", model.Name))
-	content.WriteString(fmt.Sprintf("\tFindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*%s, error)\n\n", model.Name))
+	content.WriteString(fmt.Sprintf("\t// FindPaginated finds %s records with pagination, optional where clause and sort expression\n", model.Name))
+	content.WriteString(fmt.Sprintf("\tFindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*%s, error)\n\n", model.Name))
 
 	content.WriteString(fmt.Sprintf("\t// Count counts %s records with optional where clause\n", model.Name))
 	content.WriteString("\tCount(ctx context.Context, where string, args ...interface{}) (int64, error)\n\n")

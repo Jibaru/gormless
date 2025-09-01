@@ -17,7 +17,7 @@
 - **Zero Dependencies**: Generated code uses only standard library packages
 - **Smart Tagging**: Automatic field mapping using struct tags
 - **Transaction Support**: Built-in transaction management
-- **Rich Operations**: CRUD, bulk operations, pagination, and counting
+- **Rich Operations**: CRUD, bulk operations, pagination, counting, and sorting
 - **Interface Generation**: Generate DAO interfaces for better abstraction and testing
 - **Clean Code**: Generates readable, maintainable Go code
 - **CLI Ready**: Simple command-line interface
@@ -101,9 +101,9 @@ func (dao *UserDAO) UpdateMany(ctx context.Context, users []*User) error
 func (dao *UserDAO) DeleteManyByPks(ctx context.Context, pks []string) error
 
 // Query Operations
-func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*User, error)
-func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error)
-func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error)
+func (dao *UserDAO) FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*User, error)
+func (dao *UserDAO) FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*User, error)
+func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*User, error)
 func (dao *UserDAO) Count(ctx context.Context, where string, args ...interface{}) (int64, error)
 
 // Advanced Operations
@@ -148,9 +148,9 @@ type UserDAO interface {
     DeleteManyByPks(ctx context.Context, pks []string) error
 
     // Query Operations
-    FindOne(ctx context.Context, where string, args ...interface{}) (*User, error)
-    FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error)
-    FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error)
+    FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*User, error)
+    FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*User, error)
+    FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*User, error)
     Count(ctx context.Context, where string, args ...interface{}) (int64, error)
 
     // Advanced Operations
@@ -394,6 +394,101 @@ func generateID() string {
     return "user-123"
 }
 ```
+
+### Sort Expressions
+
+The `FindOne`, `FindAll`, and `FindPaginated` methods support optional sort expressions to control the order of returned results.
+
+#### Sort Syntax
+
+Pass a sort expression as a string using standard SQL `ORDER BY` syntax:
+
+```go
+// Basic sorting
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+users, err := userDAO.FindAll(ctx, "", "created_at DESC")
+
+// Multiple columns
+users, err := userDAO.FindAll(ctx, "", "name ASC, created_at DESC")
+
+// With WHERE conditions
+users, err := userDAO.FindAll(ctx, "age > $1", "name ASC", 21)
+
+// Complex sorting
+users, err := userDAO.FindPaginated(ctx, 10, 0, "email LIKE $1", "created_at DESC, name ASC", "%@example.com")
+```
+
+#### Sort Examples by Database
+
+**PostgreSQL:**
+```go
+// Find users ordered by name ascending
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+
+// Find users ordered by creation date (newest first)
+users, err := userDAO.FindAll(ctx, "", "created_at DESC")
+
+// Find users with conditions and sorting
+users, err := userDAO.FindAll(ctx, "age >= $1", "age ASC, name DESC", 18)
+
+// Paginated results with sorting
+users, err := userDAO.FindPaginated(ctx, 5, 10, "email LIKE $1", "name ASC", "%@gmail.com")
+```
+
+**MySQL:**
+```go
+// Find users ordered by name ascending
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+
+// Find users with conditions and sorting
+users, err := userDAO.FindAll(ctx, "age >= ?", "age ASC, name DESC", 18)
+
+// Paginated results with sorting
+users, err := userDAO.FindPaginated(ctx, 5, 10, "email LIKE ?", "name ASC", "%@gmail.com")
+```
+
+**SQL Server:**
+```go
+// Find users ordered by name ascending
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+
+// Find users with conditions and sorting
+users, err := userDAO.FindAll(ctx, "age >= @p1", "age ASC, name DESC", 18)
+
+// Paginated results with sorting
+users, err := userDAO.FindPaginated(ctx, 5, 10, "email LIKE @p1", "name ASC", "%@gmail.com")
+```
+
+**Oracle:**
+```go
+// Find users ordered by name ascending
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+
+// Find users with conditions and sorting
+users, err := userDAO.FindAll(ctx, "age >= :1", "age ASC, name DESC", 18)
+
+// Paginated results with sorting
+users, err := userDAO.FindPaginated(ctx, 5, 10, "email LIKE :1", "name ASC", "%@gmail.com")
+```
+
+**SQLite:**
+```go
+// Find users ordered by name ascending
+users, err := userDAO.FindAll(ctx, "", "name ASC")
+
+// Find users with conditions and sorting
+users, err := userDAO.FindAll(ctx, "age >= ?", "age ASC, name DESC", 18)
+
+// Paginated results with sorting
+users, err := userDAO.FindPaginated(ctx, 5, 10, "email LIKE ?", "name ASC", "%@gmail.com")
+```
+
+#### Important Notes
+
+- **Empty Sort**: Pass an empty string `""` for the sort parameter to use default ordering (or no explicit ordering)
+- **SQL Injection**: Sort expressions are concatenated directly into queries. Only use trusted input or validate sort expressions carefully
+- **Column Names**: Use the actual database column names in sort expressions, not Go field names
+- **Database-Specific**: Sort expressions use standard SQL syntax but may have database-specific features available
 
 ## Configuration
 

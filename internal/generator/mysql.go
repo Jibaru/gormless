@@ -357,7 +357,7 @@ func generateMySQLFindOneMethod(model parser.Model, daoName string) string {
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindOne(ctx context.Context, where string, args ...interface{}) (*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -365,6 +365,10 @@ func generateMySQLFindOneMethod(model parser.Model, daoName string) string {
 
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tquery += \" ORDER BY \" + sort\n")
 	content.WriteString("\t}\n\n")
 
 	content.WriteString("\trow := dao.queryRowContext(ctx, query, args...)\n\n")
@@ -396,7 +400,7 @@ func generateMySQLFindAllMethod(model parser.Model, daoName string) string {
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindAll(ctx context.Context, where string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -404,6 +408,10 @@ func generateMySQLFindAllMethod(model parser.Model, daoName string) string {
 
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tquery += \" ORDER BY \" + sort\n")
 	content.WriteString("\t}\n\n")
 
 	content.WriteString("\trows, err := dao.queryContext(ctx, query, args...)\n")
@@ -446,7 +454,7 @@ func generateMySQLFindPaginatedMethod(model parser.Model, daoName string) string
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -454,6 +462,10 @@ func generateMySQLFindPaginatedMethod(model parser.Model, daoName string) string
 
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tquery += \" ORDER BY \" + sort\n")
 	content.WriteString("\t}\n\n")
 
 	content.WriteString("\tquery += fmt.Sprintf(\" LIMIT %d OFFSET %d\", limit, offset)\n\n")

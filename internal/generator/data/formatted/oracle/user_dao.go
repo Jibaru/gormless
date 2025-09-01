@@ -222,7 +222,7 @@ func (dao *UserDAO) DeleteManyByPks(ctx context.Context, pks []int) error {
 	return err
 }
 
-func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*User, error) {
+func (dao *UserDAO) FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*User, error) {
 	query := `
 		SELECT id, name, email, password, age, deleted_at
 		FROM users
@@ -230,6 +230,10 @@ func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface
 
 	if where != "" {
 		query += " WHERE " + where
+	}
+
+	if sort != "" {
+		query += " ORDER BY " + sort
 	}
 
 	row := dao.queryRowContext(ctx, query, args...)
@@ -251,7 +255,7 @@ func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface
 	return &m, nil
 }
 
-func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error) {
+func (dao *UserDAO) FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*User, error) {
 	query := `
 		SELECT id, name, email, password, age, deleted_at
 		FROM users
@@ -259,6 +263,10 @@ func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface
 
 	if where != "" {
 		query += " WHERE " + where
+	}
+
+	if sort != "" {
+		query += " ORDER BY " + sort
 	}
 
 	rows, err := dao.queryContext(ctx, query, args...)
@@ -291,7 +299,7 @@ func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface
 	return models, nil
 }
 
-func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error) {
+func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*User, error) {
 	baseQuery := `
 		SELECT id, name, email, password, age, deleted_at
 		FROM users
@@ -301,11 +309,13 @@ func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where 
 		baseQuery += " WHERE " + where
 	}
 
-	query := fmt.Sprintf(`
-		SELECT * FROM (
-			%s
-		) ORDER BY ROWID OFFSET %d ROWS FETCH NEXT %d ROWS ONLY
-	`, baseQuery, offset, limit)
+	if sort != "" {
+		baseQuery += " ORDER BY " + sort
+	} else {
+		baseQuery += " ORDER BY ROWID"
+	}
+
+	query := fmt.Sprintf(`%s OFFSET %d ROWS FETCH NEXT %d ROWS ONLY`, baseQuery, offset, limit)
 
 	rows, err := dao.queryContext(ctx, query, args...)
 	if err != nil {

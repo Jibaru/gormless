@@ -371,7 +371,7 @@ func generateOracleFindOneMethod(model parser.Model, daoName string) string {
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindOne(ctx context.Context, where string, args ...interface{}) (*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindOne(ctx context.Context, where string, sort string, args ...interface{}) (*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -379,6 +379,10 @@ func generateOracleFindOneMethod(model parser.Model, daoName string) string {
 
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tquery += \" ORDER BY \" + sort\n")
 	content.WriteString("\t}\n\n")
 
 	content.WriteString("\trow := dao.queryRowContext(ctx, query, args...)\n\n")
@@ -410,7 +414,7 @@ func generateOracleFindAllMethod(model parser.Model, daoName string) string {
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindAll(ctx context.Context, where string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindAll(ctx context.Context, where string, sort string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tquery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -418,6 +422,10 @@ func generateOracleFindAllMethod(model parser.Model, daoName string) string {
 
 	content.WriteString("\tif where != \"\" {\n")
 	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tquery += \" ORDER BY \" + sort\n")
 	content.WriteString("\t}\n\n")
 
 	content.WriteString("\trows, err := dao.queryContext(ctx, query, args...)\n")
@@ -460,7 +468,7 @@ func generateOracleFindPaginatedMethod(model parser.Model, daoName string) strin
 		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
 	}
 
-	content.WriteString(fmt.Sprintf("func (dao *%s) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindPaginated(ctx context.Context, limit, offset int, where string, sort string, args ...interface{}) ([]*%s, error) {\n", daoName, model.Name))
 	content.WriteString("\tbaseQuery := `\n")
 	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
 	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
@@ -470,12 +478,13 @@ func generateOracleFindPaginatedMethod(model parser.Model, daoName string) strin
 	content.WriteString("\t\tbaseQuery += \" WHERE \" + where\n")
 	content.WriteString("\t}\n\n")
 
-	// Oracle 12c+ pagination with OFFSET/FETCH
-	content.WriteString("\tquery := fmt.Sprintf(`\n")
-	content.WriteString("\t\tSELECT * FROM (\n")
-	content.WriteString("\t\t\t%s\n")
-	content.WriteString("\t\t) ORDER BY ROWID OFFSET %d ROWS FETCH NEXT %d ROWS ONLY\n")
-	content.WriteString("\t`, baseQuery, offset, limit)\n\n")
+	content.WriteString("\tif sort != \"\" {\n")
+	content.WriteString("\t\tbaseQuery += \" ORDER BY \" + sort\n")
+	content.WriteString("\t} else {\n")
+	content.WriteString("\t\tbaseQuery += \" ORDER BY ROWID\"\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\tquery := fmt.Sprintf(`%s OFFSET %d ROWS FETCH NEXT %d ROWS ONLY`, baseQuery, offset, limit)\n\n")
 
 	content.WriteString("\trows, err := dao.queryContext(ctx, query, args...)\n")
 	content.WriteString("\tif err != nil {\n")
