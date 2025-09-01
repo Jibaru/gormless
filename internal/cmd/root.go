@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	input  string
-	output string
-	driver string
+	input        string
+	output       string
+	driver       string
+	interfaceOpt bool
 )
 
 var rootCmd = &cobra.Command{
@@ -37,6 +38,10 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("there are no models")
 		}
 
+		if interfaceOpt {
+			return generator.GenerateDAOInterfaces(models, output)
+		}
+
 		return generator.GenerateDAOs(models, output, driver)
 	},
 }
@@ -44,11 +49,11 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().StringVarP(&input, "input", "i", "", "Path to file or folder with models (required)")
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "Path to output folder (required)")
-	rootCmd.Flags().StringVarP(&driver, "driver", "d", "", "Database driver: postgres, mysql, sqlserver, oracle, sqlite (required)")
+	rootCmd.Flags().StringVarP(&driver, "driver", "d", "", "Database driver: postgres, mysql, sqlserver, oracle, sqlite (required when not using --interface)")
+	rootCmd.Flags().BoolVar(&interfaceOpt, "interface", false, "Generate DAO interfaces instead of concrete implementations")
 
 	rootCmd.MarkFlagRequired("input")
 	rootCmd.MarkFlagRequired("output")
-	rootCmd.MarkFlagRequired("driver")
 }
 
 func Execute() error {
@@ -62,11 +67,13 @@ func validateFlags() error {
 	if output == "" {
 		return fmt.Errorf("output folder not provided")
 	}
-	if driver == "" {
-		return fmt.Errorf("driver not provided")
-	}
-	if driver != "postgres" && driver != "mysql" && driver != "sqlserver" && driver != "oracle" && driver != "sqlite" {
-		return fmt.Errorf("invalid driver: %s. Allowed drivers: postgres, mysql, sqlserver, oracle, sqlite", driver)
+	if !interfaceOpt {
+		if driver == "" {
+			return fmt.Errorf("driver not provided")
+		}
+		if driver != "postgres" && driver != "mysql" && driver != "sqlserver" && driver != "oracle" && driver != "sqlite" {
+			return fmt.Errorf("invalid driver: %s. Allowed drivers: postgres, mysql, sqlserver, oracle, sqlite", driver)
+		}
 	}
 	return nil
 }

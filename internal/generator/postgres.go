@@ -564,11 +564,3 @@ func getPrimaryColumn(model parser.Model) string {
 	return "id"
 }
 
-func getPrimaryType(model parser.Model) string {
-	for _, field := range model.Fields {
-		if field.IsPrimary {
-			return field.Type
-		}
-	}
-	return "string"
-}

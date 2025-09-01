@@ -18,6 +18,7 @@
 - **Smart Tagging**: Automatic field mapping using struct tags
 - **Transaction Support**: Built-in transaction management
 - **Rich Operations**: CRUD, bulk operations, pagination, and counting
+- **Interface Generation**: Generate DAO interfaces for better abstraction and testing
 - **Clean Code**: Generates readable, maintainable Go code
 - **CLI Ready**: Simple command-line interface
 
@@ -48,6 +49,9 @@ gormless --input ./models --output ./dao --driver oracle
 
 # Generate SQLite DAOs
 gormless --input ./models --output ./dao --driver sqlite
+
+# Generate DAO interfaces (database-agnostic)
+gormless --input ./models --output ./dao --interface
 ```
 
 ## Documentation
@@ -106,6 +110,60 @@ func (dao *UserDAO) Count(ctx context.Context, where string, args ...interface{}
 func (dao *UserDAO) PartialUpdate(ctx context.Context, pk string, fields map[string]interface{}) error
 func (dao *UserDAO) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
 ```
+
+### Interface Generation
+
+Generate database-agnostic DAO interfaces for better abstraction, dependency injection, and testing:
+
+```bash
+# Generate interfaces for all models in a directory
+gormless --input ./models --output ./dao --interface
+
+# Generate interface for a specific model
+gormless --input ./models/user.go --output ./dao --interface
+```
+
+This generates clean interfaces like:
+
+```go
+package dao
+
+import (
+    "context"
+    "your-project/models"
+)
+
+type User = models.User
+
+type UserDAO interface {
+    // CRUD Operations
+    Create(ctx context.Context, m *User) error
+    Update(ctx context.Context, m *User) error
+    FindByPk(ctx context.Context, pk string) (*User, error)
+    DeleteByPk(ctx context.Context, pk string) error
+
+    // Bulk Operations
+    CreateMany(ctx context.Context, models []*User) error
+    UpdateMany(ctx context.Context, models []*User) error
+    DeleteManyByPks(ctx context.Context, pks []string) error
+
+    // Query Operations
+    FindOne(ctx context.Context, where string, args ...interface{}) (*User, error)
+    FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error)
+    FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error)
+    Count(ctx context.Context, where string, args ...interface{}) (int64, error)
+
+    // Advanced Operations
+    PartialUpdate(ctx context.Context, pk string, fields map[string]interface{}) error
+    WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
+}
+```
+
+**Benefits of Interface Generation:**
+- **Database Agnostic**: Switch between different database implementations seamlessly
+- **Better Testing**: Easily mock DAO interfaces for unit testing
+- **Dependency Injection**: Use interfaces for cleaner architecture
+- **Team Development**: Define contracts before implementation
 
 ### Usage Examples
 
@@ -268,6 +326,75 @@ func main() {
 }
 ```
 
+#### Using Interfaces
+
+Generate and use DAO interfaces for better architecture:
+
+```go
+package main
+
+import (
+    "context"
+    "database/sql"
+    "log"
+    
+    "your-project/dao"           // Generated interfaces
+    "your-project/dao/postgres"  // Concrete implementation
+    "your-project/models"
+    _ "github.com/lib/pq"
+)
+
+// Service uses the interface for database independence
+type UserService struct {
+    userDAO dao.UserDAO
+}
+
+func NewUserService(userDAO dao.UserDAO) *UserService {
+    return &UserService{userDAO: userDAO}
+}
+
+func (s *UserService) CreateUser(ctx context.Context, name, email string) (*models.User, error) {
+    user := &models.User{
+        ID:    generateID(),
+        Name:  name,
+        Email: email,
+    }
+    
+    if err := s.userDAO.Create(ctx, user); err != nil {
+        return nil, err
+    }
+    
+    return user, nil
+}
+
+func main() {
+    // Setup database connection
+    db, err := sql.Open("postgres", "postgresql://user:password@localhost/dbname")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+    
+    // Use concrete implementation
+    userDAO := postgres.NewUserDAO(db)
+    
+    // Pass to service via interface
+    userService := NewUserService(userDAO)
+    
+    user, err := userService.CreateUser(context.Background(), "John Doe", "john@example.com")
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    log.Printf("Created user: %+v", user)
+}
+
+func generateID() string {
+    // Your ID generation logic
+    return "user-123"
+}
+```
+
 ## Configuration
 
 ### Command Line Options
@@ -276,7 +403,10 @@ func main() {
 |--------|-------|-------------|----------|
 | `--input` | `-i` | Path to model file or directory | ✅ |
 | `--output` | `-o` | Output directory for generated DAOs | ✅ |
-| `--driver` | `-d` | Database driver (`postgres`, `mysql`, `sqlserver`, `oracle`, `sqlite`) | ✅ |
+| `--driver` | `-d` | Database driver (`postgres`, `mysql`, `sqlserver`, `oracle`, `sqlite`) | ✅* |
+| `--interface` | | Generate DAO interfaces instead of concrete implementations | ❌ |
+
+\* Required only when not using `--interface`
 
 ### Struct Tags
 
