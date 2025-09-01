@@ -97,6 +97,7 @@ func (dao *UserDAO) UpdateMany(ctx context.Context, users []*User) error
 func (dao *UserDAO) DeleteManyByPks(ctx context.Context, pks []string) error
 
 // Query Operations
+func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*User, error)
 func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error)
 func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error)
 func (dao *UserDAO) Count(ctx context.Context, where string, args ...interface{}) (int64, error)
