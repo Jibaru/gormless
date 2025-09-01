@@ -202,6 +202,32 @@ func (dao *UserDAO) DeleteManyByPks(ctx context.Context, pks []int) error {
 	return err
 }
 
+func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*User, error) {
+	query := `
+		SELECT user_key, username, Age
+		FROM User
+	`
+
+	if where != "" {
+		query += " WHERE " + where
+	}
+
+	row := dao.queryRowContext(ctx, query, args...)
+
+	var m User
+	err := row.Scan(
+		&m.Key,
+		&m.Name,
+		&m.Age,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
 func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error) {
 	query := `
 		SELECT user_key, username, Age

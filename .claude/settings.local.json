@@ -23,7 +23,10 @@
       "Bash(./gormless.exe --driver oracle --input examples/ --output final_test_oracle)",
       "Bash(./gormless.exe --driver sqlite --input examples/product.go --output test_sqlite_output)",
       "Bash(./gormless.exe --driver sqlite --input examples/ --output final_sqlite_test)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(./gormless.exe --driver oracle --input examples/product.go --output test_output)",
+      "Bash(./gormless.exe --driver sqlite --input examples/product.go --output test_output)",
+      "Bash(./gormless.exe --driver postgres --input examples/ --output test_output_final)"
     ],
     "deny": [],
     "ask": []

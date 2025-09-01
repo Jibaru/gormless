@@ -1,11 +1,11 @@
-package oracle
+package sqlserver
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"github.com/someone/models"
+	"strings"
 )
 
 type User = models.User
@@ -49,7 +49,7 @@ func (dao *UserDAO) queryContext(ctx context.Context, query string, args ...inte
 func (dao *UserDAO) Create(ctx context.Context, m *User) error {
 	query := `
 		INSERT INTO users (id, name, email, password, age, deleted_at)
-		VALUES (:1, :2, :3, :4, :5, :6)
+		VALUES (@p1, @p2, @p3, @p4, @p5, @p6)
 	`
 
 	_, err := dao.execContext(
@@ -69,12 +69,12 @@ func (dao *UserDAO) Create(ctx context.Context, m *User) error {
 func (dao *UserDAO) Update(ctx context.Context, m *User) error {
 	query := `
 		UPDATE users
-		SET name = :1,
-			email = :2,
-			password = :3,
-			age = :4,
-			deleted_at = :5
-		WHERE id = :6
+		SET name = @p1,
+			email = @p2,
+			password = @p3,
+			age = @p4,
+			deleted_at = @p5
+		WHERE id = @p6
 	`
 
 	_, err := dao.execContext(ctx, query,
@@ -98,21 +98,21 @@ func (dao *UserDAO) PartialUpdate(ctx context.Context, pk int, fields map[string
 	i := 1
 
 	for field, value := range fields {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%d", field, i))
+		setClauses = append(setClauses, fmt.Sprintf("%s = @p%d", field, i))
 		args = append(args, value)
 		i++
 	}
 
 	args = append(args, pk)
 
-	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = :%d`, strings.Join(setClauses, ", "), i)
+	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = @p%d`, strings.Join(setClauses, ", "), i)
 
 	_, err := dao.execContext(ctx, query, args...)
 	return err
 }
 
 func (dao *UserDAO) DeleteByPk(ctx context.Context, pk int) error {
-	query := `DELETE FROM users WHERE id = :1`
+	query := `DELETE FROM users WHERE id = @p1`
 	_, err := dao.execContext(ctx, query, pk)
 	return err
 }
@@ -121,7 +121,7 @@ func (dao *UserDAO) FindByPk(ctx context.Context, pk int) (*User, error) {
 	query := `
 		SELECT id, name, email, password, age, deleted_at
 		FROM users
-		WHERE id = :1
+		WHERE id = @p1
 	`
 	row := dao.queryRowContext(ctx, query, pk)
 
@@ -151,8 +151,8 @@ func (dao *UserDAO) CreateMany(ctx context.Context, models []*User) error {
 	args := make([]interface{}, 0, len(models)*6)
 
 	for i, model := range models {
-		placeholders[i] = fmt.Sprintf("(:%d, :%d, :%d, :%d, :%d, :%d)",
-			i*6+1, 			i*6+2, 			i*6+3, 			i*6+4, 			i*6+5, 			i*6+6)
+		placeholders[i] = fmt.Sprintf("(@p%d, @p%d, @p%d, @p%d, @p%d, @p%d)",
+			i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6)
 
 		args = append(args,
 			model.ID,
@@ -180,12 +180,12 @@ func (dao *UserDAO) UpdateMany(ctx context.Context, models []*User) error {
 
 	query := `
 		UPDATE users
-		SET name = :1,
-			email = :2,
-			password = :3,
-			age = :4,
-			deleted_at = :5
-		WHERE id = :6
+		SET name = @p1,
+			email = @p2,
+			password = @p3,
+			age = @p4,
+			deleted_at = @p5
+		WHERE id = @p6
 	`
 
 	for _, model := range models {
@@ -213,13 +213,42 @@ func (dao *UserDAO) DeleteManyByPks(ctx context.Context, pks []int) error {
 	placeholders := make([]string, len(pks))
 	args := make([]interface{}, len(pks))
 	for i, pk := range pks {
-		placeholders[i] = fmt.Sprintf(":%d", i+1)
+		placeholders[i] = fmt.Sprintf("@p%d", i+1)
 		args[i] = pk
 	}
 
 	query := fmt.Sprintf(`DELETE FROM users WHERE id IN (%s)`, strings.Join(placeholders, ","))
 	_, err := dao.execContext(ctx, query, args...)
 	return err
+}
+
+func (dao *UserDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*User, error) {
+	query := `
+		SELECT id, name, email, password, age, deleted_at
+		FROM users
+	`
+
+	if where != "" {
+		query += " WHERE " + where
+	}
+
+	row := dao.queryRowContext(ctx, query, args...)
+
+	var m User
+	err := row.Scan(
+		&m.ID,
+		&m.Name,
+		&m.Email,
+		&m.Password,
+		&m.Age,
+		&m.DeletedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }
 
 func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*User, error) {
@@ -263,20 +292,16 @@ func (dao *UserDAO) FindAll(ctx context.Context, where string, args ...interface
 }
 
 func (dao *UserDAO) FindPaginated(ctx context.Context, limit, offset int, where string, args ...interface{}) ([]*User, error) {
-	baseQuery := `
+	query := `
 		SELECT id, name, email, password, age, deleted_at
 		FROM users
 	`
 
 	if where != "" {
-		baseQuery += " WHERE " + where
+		query += " WHERE " + where
 	}
 
-	query := fmt.Sprintf(`
-		SELECT * FROM (
-			%s
-		) ORDER BY ROWID OFFSET %d ROWS FETCH NEXT %d ROWS ONLY
-	`, baseQuery, offset, limit)
+	query += fmt.Sprintf(" ORDER BY (SELECT NULL) OFFSET %d ROWS FETCH NEXT %d ROWS ONLY", offset, limit)
 
 	rows, err := dao.queryContext(ctx, query, args...)
 	if err != nil {

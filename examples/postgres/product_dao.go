@@ -232,6 +232,36 @@ func (dao *ProductDAO) DeleteManyByPks(ctx context.Context, pks []string) error 
 	return err
 }
 
+func (dao *ProductDAO) FindOne(ctx context.Context, where string, args ...interface{}) (*Product, error) {
+	query := `
+		SELECT id, name, description, category, price, stock, created_at
+		FROM products
+	`
+
+	if where != "" {
+		query += " WHERE " + where
+	}
+
+	row := dao.queryRowContext(ctx, query, args...)
+
+	var p Product
+	err := row.Scan(
+		&p.ID,
+		&p.Name,
+		&p.Description,
+		&p.Category,
+		&p.Price,
+		&p.Stock,
+		&p.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
+
 func (dao *ProductDAO) FindAll(ctx context.Context, where string, args ...interface{}) ([]*Product, error) {
 	query := `
 		SELECT id, name, description, category, price, stock, created_at

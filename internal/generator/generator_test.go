@@ -49,7 +49,7 @@ func TestGenerateDAOs(t *testing.T) {
 					t.Errorf("unexpected error: %v", err)
 				}
 
-				compareFilesLineByLine(t, fmt.Sprintf("data/%s_formatted_stub.txt", driver), fmt.Sprintf("%s/%s/user_dao.go", outputPath, driver))
+				compareFilesLineByLine(t, fmt.Sprintf("data/formatted/%s/user_dao.go", driver), fmt.Sprintf("%s/%s/user_dao.go", outputPath, driver))
 			})
 		}
 	})

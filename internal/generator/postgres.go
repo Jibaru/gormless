@@ -46,6 +46,7 @@ func GeneratePostgresDAO(model parser.Model) (string, error) {
 	content.WriteString(generateCreateManyMethod(model, daoName))
 	content.WriteString(generateUpdateManyMethod(model, daoName))
 	content.WriteString(generateDeleteManyByIDsMethod(model, daoName))
+	content.WriteString(generateFindOneMethod(model, daoName))
 	content.WriteString(generateFindAllMethod(model, daoName))
 	content.WriteString(generateFindPaginatedMethod(model, daoName))
 	content.WriteString(generateCountMethod(model, daoName))
@@ -355,6 +356,45 @@ func generateDeleteManyByIDsMethod(model parser.Model, daoName string) string {
 	content.WriteString(fmt.Sprintf("\tquery := fmt.Sprintf(`DELETE FROM %s WHERE %s IN (%%s)`, strings.Join(placeholders, \",\"))\n", model.TableName, primaryColumn))
 	content.WriteString("\t_, err := dao.execContext(ctx, query, args...)\n")
 	content.WriteString("\treturn err\n")
+	content.WriteString("}\n\n")
+
+	return content.String()
+}
+
+func generateFindOneMethod(model parser.Model, daoName string) string {
+	var content strings.Builder
+	var columns []string
+	var scanArgs []string
+
+	for _, field := range model.Fields {
+		columns = append(columns, field.Column)
+		scanArgs = append(scanArgs, fmt.Sprintf("&m.%s", field.Name))
+	}
+
+	content.WriteString(fmt.Sprintf("func (dao *%s) FindOne(ctx context.Context, where string, args ...interface{}) (*%s, error) {\n", daoName, model.Name))
+	content.WriteString("\tquery := `\n")
+	content.WriteString(fmt.Sprintf("\t\tSELECT %s\n", strings.Join(columns, ", ")))
+	content.WriteString(fmt.Sprintf("\t\tFROM %s\n", model.TableName))
+	content.WriteString("\t`\n\n")
+
+	content.WriteString("\tif where != \"\" {\n")
+	content.WriteString("\t\tquery += \" WHERE \" + where\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\trow := dao.queryRowContext(ctx, query, args...)\n\n")
+
+	content.WriteString(fmt.Sprintf("\tvar m %s\n", model.Name))
+	content.WriteString("\terr := row.Scan(\n")
+	for _, arg := range scanArgs {
+		content.WriteString(fmt.Sprintf("\t\t%s,\n", arg))
+	}
+	content.WriteString("\t)\n\n")
+
+	content.WriteString("\tif err != nil {\n")
+	content.WriteString("\t\treturn nil, err\n")
+	content.WriteString("\t}\n\n")
+
+	content.WriteString("\treturn &m, nil\n")
 	content.WriteString("}\n\n")
 
 	return content.String()
