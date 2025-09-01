@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/someone/models"
+	"github.com/Jibaru/gormless/internal/generator/data/models"
 	"strings"
 )
 

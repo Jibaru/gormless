@@ -35,7 +35,7 @@ func TestGenerateDAOs(t *testing.T) {
 					TableName:  "users",
 					PrimaryKey: "ID",
 					Package:    "models",
-					ImportPath: "github.com/someone/models",
+					ImportPath: "github.com/Jibaru/gormless/internal/generator/data/models",
 				}
 
 				outputPath, err := os.MkdirTemp("", "test")
